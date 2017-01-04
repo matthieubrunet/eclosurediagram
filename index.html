@@ -8,11 +8,11 @@
 <style>
 
 text {
-  font: 12px sans-serif;
+  font: 10px sans-serif;
   text-anchor: middle;
 }
 .titre {
-	font-size: 18px;
+	font-size: 16px;
 }
 
 .node--hover circle {
@@ -101,7 +101,7 @@ function ul2csv(html, racine)
 	    //console.log(csv);
 	    if ( $(this).children("ul").length )
 	    {
-		    csv += racine + "." + ligne[0] + "." + ligne[0] + "," + defaultSize + ",1\n";
+		    csv += racine + "." + ligne[0] + "." + ligne[0] + "," + size + ",1\n";
 		    ul2csv($(this).children("ul"), racine + "." + ligne[0]);
 	    }
     });
