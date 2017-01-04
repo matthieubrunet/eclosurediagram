@@ -22,16 +22,16 @@ text {
 #csv {
 	float: left;
 }
+.editeur {
+	float: left;
+}
 </style>
 <form>
 	<textarea name="csv" id="csv" cols="50" rows="70">
-	<UL>
-		<LI>Vrac</LI>
-		<li>Produits finis très très long avec du texte et ecore plus long que ça si posible</li>
-	</UL>
+
 	</textarea>
 </form>
-<svg width="500" height="500" id="mysvg"><g transform="translate(1,1)"></g></svg>
+<svg width="1200" height="1200" id="mysvg"><g transform="translate(1,1)"></g></svg>
 <script src="//code.jquery.com/jquery-3.1.1.slim.min.js"></script>
 <script src="//d3js.org/d3.v4.min.js"></script>
 
@@ -63,9 +63,15 @@ var defaultSize = 10;
 $(function() {
 	    $('#csv').froalaEditor({
 		    pluginsEnabled: ['lists'],
-		    tabSpaces: 4
+		    tabSpaces: 4,
+		    width: 300,
+		    height: 800,
+		    editorClass: "editeur"
 	    });
-	    $('#csv').froalaEditor('html.set', Cookies.get("hola"));
+	    var cookie = Cookies.get("hola");
+	    var html =  cookie == "undefined" ? "<ul><li>First circle</li></ul>" : cookie;
+	    console.log(html);
+	    $('#csv').froalaEditor('html.set', html);
 
 	$("#csv").keyup(function()
 	{
@@ -92,7 +98,7 @@ function ul2csv(html, racine)
 	    //var ligne = $(this).text().split(",");
 	    var size = ligne.length > 1 ? parseInt(ligne[1]) : defaultSize;
 	    csv += racine + "." + ligne[0] + "," + size + "\n";
-	    console.log(csv);
+	    //console.log(csv);
 	    if ( $(this).children("ul").length )
 	    {
 		    csv += racine + "." + ligne[0] + "." + ligne[0] + "," + defaultSize + ",1\n";
@@ -109,7 +115,7 @@ function ul2csv(html, racine)
     
 	ul2csv(html, racine);
 	
-    console.log(csv);
+    //console.log(csv);
 
     data = d3.csvParse(csv);
 
