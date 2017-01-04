@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!-- Include Editor style. -->
+<link href='https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.4.0/css/froala_editor.min.css' rel='stylesheet' type='text/css' />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.4.0/css/froala_style.min.css' rel='stylesheet' type='text/css' />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.min.css">
+<style>
+
+text {
+  font: 12px sans-serif;
+  text-anchor: middle;
+}
+.titre {
+	font-size: 18px;
+}
+
+.node--hover circle {
+  stroke: #000;
+  stroke-width: 1.2px;
+}
+#csv {
+	float: left;
+}
+</style>
+<form>
+	<textarea name="csv" id="csv" cols="50" rows="70">
+	<UL>
+		<LI>Vrac</LI>
+		<li>Produits finis très très long avec du texte et ecore plus long que ça si posible</li>
+	</UL>
+	</textarea>
+</form>
+<svg width="500" height="500" id="mysvg"><g transform="translate(1,1)"></g></svg>
+<script src="http://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+<script src="http://d3js.org/d3.v4.min.js"></script>
+
+<!-- Include JS file. -->
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.4.0/js/froala_editor.min.js'></script>
+<script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.4.0/js/plugins/lists.min.js'></script>
+<script src="js.cookie.js"></script>
+<script>
+	
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+	
+var format = d3.format(",d");
+	
+	var color = d3.scaleSequential(d3.interpolateMagma)
+	    .domain([-4, 4]);
+	var stratify = d3.stratify()
+	    .parentId(function(d) { return d.id.substring(0, d.id.lastIndexOf(".")); });
+	var pack = d3.pack()
+	    .size([width - 2, height - 2])
+	    .padding(3);
+	  
+
+var racine = "Arcadie";
+var csv = "";
+var defaultSize = 10;
+    
+$(function() {
+	    $('#csv').froalaEditor({
+		    pluginsEnabled: ['lists'],
+		    tabSpaces: 4
+	    });
+	    $('#csv').froalaEditor('html.set', Cookies.get("hola"));
+
+	$("#csv").keyup(function()
+	{
+		maj();
+	});
+	$('#csv').on('froalaEditor.keyup', function (e, editor) {
+		maj();
+	});
+	
+	maj();
+});
+
+function ul2csv(html, racine)
+{
+	html.children("li").each(function()
+    {
+	    var ligne = $(this)
+		    .clone()    //clone the element
+		    .children() //select all the children
+		    .remove()   //remove all the children
+		    .end()  //again go back to selected element
+		    .text() 
+		    .split(",");
+	    //var ligne = $(this).text().split(",");
+	    var size = ligne.length > 1 ? parseInt(ligne[1]) : defaultSize;
+	    csv += racine + "." + ligne[0] + "," + size + "\n";
+	    console.log(csv);
+	    if ( $(this).children("ul").length )
+	    {
+		    csv += racine + "." + ligne[0] + "." + ligne[0] + "," + defaultSize + ",1\n";
+		    ul2csv($(this).children("ul"), racine + "." + ligne[0]);
+	    }
+    });
+}
+
+ function maj() {
+    var html = $($('#csv').froalaEditor('html.get'));
+    Cookies.set("hola", html.html(), { expires: 365 });
+
+    csv = "id,taille,titre\n"+racine+"\n";
+    
+	ul2csv(html, racine);
+	
+    console.log(csv);
+
+    data = d3.csvParse(csv);
+
+    var root = stratify(data)
+      .sum(function(d) {
+        return d.taille;
+      })
+      .sort(function(a, b) {
+        return b.taille - a.taille;
+      });
+
+    pack(root);
+    
+    // data-binding
+    var node = svg.selectAll(".node").data(root.descendants(), function(d){
+      return d;
+    });
+    
+    // exiting nodes
+    node.exit().remove();
+
+    // entering nodes
+    var nodeEnter = node.enter().append("g")
+      .attr("class", function(d) {
+        return "node" + (!d.children ? " node--leaf" : d.depth ? "" : " node--root");
+      });
+      
+    // add circles
+    nodeEnter.append("circle")
+      .attr("id", function(d) {
+        return "node-" + d.id;
+    });
+    
+    // update + enter
+    node = nodeEnter.merge(node);
+      
+    // position everyone
+    node.attr("transform", function(d) {
+      return "translate(" + d.x + "," + d.y + ")";
+    });
+    
+    // update circles
+    node.select("circle")
+      .attr("r", function(d) {
+        return d.r;
+      })
+      .style("fill", function(d) {
+        return color(d.data.titre=="1" ? d.depth - 1 : d.depth);
+      });
+    
+    // handle enter of leafs
+    var leafEnter = nodeEnter.filter(function(d) {
+      return !d.children;
+    });
+    var leaf = node.filter(function(d) {
+      return !d.children;
+    });
+    
+    leafEnter.append("clipPath")
+      .attr("id", function(d) {
+        return "clip-" + d.id;
+      })
+      .append("use")
+      .attr("xlink:href", function(d) {
+        return "#node-" + d.id + "";
+      });
+      
+    leafEnter.append("text")
+      .attr("clip-path", function(d) {
+        return "url(#clip-" + d.id + ")";
+      }).attr("class", function(d) {
+        return d.data.titre == "1" ? "titre" : "";
+      });
+
+    leaf.select("text")
+      .selectAll("tspan")
+      .data(function(d) {
+        return d.id.substring(d.id.lastIndexOf(".") + 1).split(/(?=[A-Z][^A-Z])/g);
+      })
+      .enter().append("tspan")
+      .attr("x", 0)
+      .attr("y", function(d, i, nodes) {
+        return 13 + (i - nodes.length / 2 - 0.5) * 20;
+      })
+      .text(function(d) {
+        return d;
+      });
+      
+  }
+
+function hovered(hover) {
+  return function(d) {
+    d3.selectAll(d.ancestors().map(function(d) { return d.node; })).classed("node--hover", hover);
+  };
+}
+
+</script>
