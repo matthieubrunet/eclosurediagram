@@ -59,6 +59,8 @@ var format = d3.format(",d");
 var racine = "Arcadie";
 var csv = "";
 var defaultSize = 10;
+var textSize = 10;
+var titreSize = 16;
     
 $(function() {
 	    $('#csv').froalaEditor({
@@ -70,7 +72,7 @@ $(function() {
 	    });
 	    var cookie = Cookies.get("hola");
 	    var html =  cookie == "undefined" ? "<ul><li>First circle</li></ul>" : cookie;
-	    console.log(html);
+	    //console.log(html);
 	    $('#csv').froalaEditor('html.set', html);
 
 	$("#csv").keyup(function()
@@ -198,7 +200,9 @@ function ul2csv(html, racine)
       .enter().append("tspan")
       .attr("x", 0)
       .attr("y", function(d, i, nodes) {
-        return 13 + (i - nodes.length / 2 - 0.5) * 20;
+	      console.log($(nodes).parent());
+	  		var size = $(nodes).parent().hasClass("titre") ? titreSize : textSize;
+		  	return size+6 + (i - nodes.length / 2 - 0.5) * (size+3);
       })
       .text(function(d) {
         return d;
